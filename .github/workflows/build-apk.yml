@@ -1,4 +1,5 @@
 
+
 name: Build Sakura Anime Life APK
 
 on:
@@ -17,8 +18,8 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Install Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Check Android SDK
+        run: sdkmanager --version
 
       - name: Accept Android SDK licenses
         run: yes | sdkmanager --licenses
@@ -41,3 +42,4 @@ jobs:
         with:
           name: SakuraAnimeLife-APK
           path: SakuraAnimeLife/app/build/outputs/apk/debug/app-debug.apk
+          
