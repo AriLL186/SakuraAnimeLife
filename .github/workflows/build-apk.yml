@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout repository
+      # 1. Checkout Repository
       - name: Checkout Repository
         uses: actions/checkout@v4
 
@@ -25,23 +25,20 @@ jobs:
       # 3. Setup Android SDK
       - name: Setup Android SDK
         uses: android-actions/setup-android@v4
-        with:
-          packages: ''
 
-      # 4. Check Android SDK
-      - name: Check Android SDK
-        run: |
-          echo "Checking Android SDK..."
-          echo "ANDROID_HOME=$ANDROID_HOME"
-          sdkmanager --version
-
-      # 5. Install Android SDK Components
+      # 4. Install Android SDK
       - name: Install Android SDK Components
         run: |
           sdkmanager --install \
             "platform-tools" \
             "platforms;android-35" \
             "build-tools;35.0.0"
+
+      # 5. Check Android SDK
+      - name: Check Android SDK
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          sdkmanager --version
 
       # 6. Setup Gradle
       - name: Setup Gradle
@@ -54,10 +51,15 @@ jobs:
         run: |
           unzip -o project-source.zip -d .
 
-      # 8. Build APK
+      # 8. Build Sakura Anime Life APK
       - name: Build Sakura Anime Life APK
         working-directory: SakuraAnimeLife
+        env:
+          JAVA_OPTS: ""
+          GRADLE_OPTS: ""
         run: |
+          unset JAVA_OPTS
+          unset GRADLE_OPTS
           gradle --no-daemon assembleDebug
 
       # 9. Upload APK
