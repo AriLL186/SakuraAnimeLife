@@ -1,4 +1,3 @@
-
 name: Build Sakura Anime Life APK
 
 on:
@@ -12,86 +11,68 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout Repository
-      - name: Checkout Repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      # 2. Setup Java
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
-      # 3. Setup Android SDK
-      - name: Setup Android SDK
+      - name: Setup Android
         uses: android-actions/setup-android@v4
 
-      # 4. Install Android SDK Components
-      - name: Install Android SDK
+      - name: Install SDK
         run: |
           yes | sdkmanager --licenses || true
-          sdkmanager --install \
-            "platform-tools" \
-            "platforms;android-35" \
-            "build-tools;35.0.0"
+          sdkmanager --install "platform-tools" "platforms;android-35" "build-tools;35.0.0"
 
-      # 5. Extract Game Source
-      - name: Extract Game Source
+      - name: Extract Game
+        run: unzip -o project-source.zip -d .
+
+      - name: Fix Gradle Files
         run: |
-          unzip -o project-source.zip -d .
+          cat > SakuraAnimeLife/settings.gradle <<'EOF'
+          pluginManagement {
+              repositories {
+                  google()
+                  mavenCentral()
+                  gradlePluginPortal()
+              }
+          }
 
-      # 6. Fix Gradle Properties Automatically
-      - name: Fix Gradle Configuration
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
+          dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
 
-          p = Path("SakuraAnimeLife/gradle.properties")
+          rootProject.name = "SakuraAnimeLife"
+          include(":app")
+          EOF
 
-          lines = []
-          if p.exists():
-              lines = p.read_text().splitlines()
+          cat > SakuraAnimeLife/gradle.properties <<'EOF'
+          android.useAndroidX=true
+          org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8
+          org.gradle.parallel=true
+          org.gradle.caching=true
+          EOF
 
-          lines = [
-              line for line in lines
-              if not line.strip().startswith("org.gradle.jvmargs")
-          ]
-
-          if not any(
-              line.strip().startswith("android.useAndroidX=")
-              for line in lines
-          ):
-              lines.append("android.useAndroidX=true")
-
-          lines.append(
-              "org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8"
-          )
-
-          p.parent.mkdir(parents=True, exist_ok=True)
-          p.write_text("\n".join(lines) + "\n")
-
-          print("Gradle configuration repaired:")
-          print(p.read_text())
-          PY
-
-      # 7. Setup Gradle
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
 
-      # 8. Build APK
-      - name: Build Sakura Anime Life APK
+      - name: Build APK
         working-directory: SakuraAnimeLife
-        run: |
-          gradle --no-daemon assembleDebug
+        run: gradle --no-daemon assembleDebug
 
-      # 9. Upload APK
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: Sakura-Anime-Life-APK
           path: SakuraAnimeLife/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
-          
