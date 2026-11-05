@@ -1,3 +1,4 @@
+
 name: Build Sakura Anime Life APK
 
 on:
@@ -11,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
       - name: Setup Java
@@ -20,21 +21,36 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Setup Android
+      - name: Setup Android SDK
         uses: android-actions/setup-android@v4
 
-      - name: Install SDK
+      - name: Install Android SDK Packages
         run: |
-          yes | sdkmanager --licenses || true
-          sdkmanager --install "platform-tools" "platforms;android-35" "build-tools;35.0.0"
-
-      - name: Extract Game
-        run: unzip -o project-source.zip -d .
+          sdkmanager --install \
+            "platform-tools" \
+            "platforms;android-35" \
+            "build-tools;35.0.0"
 
       - name: Fix Gradle Files
         run: |
-          cat > SakuraAnimeLife/settings.gradle <<'EOF'
-          pluginManagement {
+          python3 - <<'PY'
+          from pathlib import Path
+
+          root = Path("SakuraAnimeLife")
+
+          if not root.exists():
+              raise SystemExit("Folder SakuraAnimeLife tidak ditemukan!")
+
+          for p in root.rglob("*"):
+              if p.is_file() and (
+                  p.name in ("build.gradle", "settings.gradle")
+                  or p.name.endswith(".gradle.kts")
+              ):
+                  s = p.read_text()
+                  p.write_text(s.replace(r"\n", "\n"))
+
+          p = root / "settings.gradle"
+          p.write_text("""pluginManagement {
               repositories {
                   google()
                   mavenCentral()
@@ -52,19 +68,15 @@ jobs:
 
           rootProject.name = "SakuraAnimeLife"
           include(":app")
-          EOF
+          """)
 
-          cat > SakuraAnimeLife/gradle.properties <<'EOF'
-          android.useAndroidX=true
-          org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8
-          org.gradle.parallel=true
-          org.gradle.caching=true
-          EOF
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.9'
+          (root / "gradle.properties").write_text(
+              "android.useAndroidX=true\n"
+              "org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8\n"
+              "org.gradle.parallel=true\n"
+              "org.gradle.caching=true\n"
+          )
+          PY
 
       - name: Build APK
         working-directory: SakuraAnimeLife
@@ -74,5 +86,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Sakura-Anime-Life-APK
-          path: SakuraAnimeLife/app/build/outputs/apk/debug/app-debug.apk
+          path: SakuraAnimeLife/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
+          
