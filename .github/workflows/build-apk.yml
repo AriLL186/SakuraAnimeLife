@@ -1,6 +1,3 @@
-
-
-
 name: Build Sakura Anime Life APK
 
 on:
@@ -14,60 +11,56 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Ambil source code dari repository
+      # 1. Checkout repository
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # 2. Siapkan Java
+      # 2. Setup Java
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
-      # 3. Siapkan Android SDK
+      # 3. Setup Android SDK
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
+        with:
+          packages: ''
 
-      # 4. Periksa Android SDK
+      # 4. Check Android SDK
       - name: Check Android SDK
         run: |
           echo "Checking Android SDK..."
           echo "ANDROID_HOME=$ANDROID_HOME"
-          command -v sdkmanager
           sdkmanager --version
 
-      # 5. Terima lisensi Android SDK
-      - name: Accept Android SDK Licenses
-        run: |
-          yes | sdkmanager --licenses
-
-      # 6. Install Android SDK Components
+      # 5. Install Android SDK Components
       - name: Install Android SDK Components
         run: |
-          sdkmanager \
+          sdkmanager --install \
             "platform-tools" \
             "platforms;android-35" \
             "build-tools;35.0.0"
 
-      # 7. Siapkan Gradle
+      # 6. Setup Gradle
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
 
-      # 8. Ekstrak source code game
+      # 7. Extract Game Source
       - name: Extract Game Source
         run: |
           unzip -o project-source.zip -d .
 
-      # 9. Build APK
+      # 8. Build APK
       - name: Build Sakura Anime Life APK
         working-directory: SakuraAnimeLife
         run: |
           gradle --no-daemon assembleDebug
 
-      # 10. Upload APK
+      # 9. Upload APK
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
